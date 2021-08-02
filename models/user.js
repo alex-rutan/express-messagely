@@ -119,7 +119,39 @@ class User {
    *   {username, first_name, last_name, phone}
    */
 
+  //TODO: check about to_user during the testing
   static async messagesFrom(username) {
+    const result = await db.query(
+      `SELECT m.id, 
+              m.to_username, 
+              m.body, 
+              m.sent_at, 
+              m.read_at
+              t.username AS username,
+              t.first_name AS first_name,
+              t.last_name AS last_name,
+              t.phone AS phone
+      FROM messages AS m
+      JOIN users ON m.from_username = users.username
+      JOIN users AS t ON m.to_username = t.username
+      WHERE users.username = $1`,
+      [username]
+    );
+    for (let row of result.rows) {
+      row = {
+        id: m.id,
+        to_username: {
+          username: username,
+          first_name: first_name,
+          last_name: last_name,
+          phone: phone
+        },
+        body: m.body,
+        sent_at: m.sent_at,
+        read_at: m.read_at,
+      }
+    }
+    return results.rows;
   }
 
   /** Return messages to this user.
@@ -131,6 +163,37 @@ class User {
    */
 
   static async messagesTo(username) {
+    const result = await db.query(
+      `SELECT m.id, 
+              m.to_username, 
+              m.body, 
+              m.sent_at, 
+              m.read_at
+              f.username AS username,
+              f.first_name AS first_name,
+              f.last_name AS last_name,
+              f.phone AS phone
+      FROM messages AS m
+      JOIN users ON m.to_username = users.username
+      JOIN users AS f ON m.from_username = f.username
+      WHERE users.username = $1`,
+      [username]
+    );
+    for (let row of result.rows) {
+      row = {
+        id: m.id,
+        from_username: {
+          username: username,
+          first_name: first_name,
+          last_name: last_name,
+          phone: phone
+        },
+        body: m.body,
+        sent_at: m.sent_at,
+        read_at: m.read_at,
+      }
+    }
+    return results.rows;
   }
 }
 
