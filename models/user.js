@@ -9,11 +9,36 @@ class User {
    */
 
   static async register({ username, password, first_name, last_name, phone }) {
+    const result = await db.query(
+      `INSERT INTO users (username,
+                          password,
+                          first_name,
+                          last_name,
+                          phone,
+                          join_at)
+             VALUES
+               ($1, $2, $3, $4, $5, current_timestamp)
+             RETURNING username, password, first_name, last_name, phone`,
+      [username, password, first_name, last_name, phone]);
+    return result.rows[0];
   }
 
   /** Authenticate: is username/password valid? Returns boolean. */
 
   static async authenticate(username, password) {
+    const result = await db.query(
+      `SELECT username, password
+      FROM users
+      WHERE username = $1`,
+      [username]
+    )
+    const user = result.rows[0];
+    if (user) {
+      if (user.password === password && user.username === username) {
+        return true;
+      }
+    }
+    return false;
   }
 
   /** Update last_login_at for user */
