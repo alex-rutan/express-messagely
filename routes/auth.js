@@ -8,7 +8,7 @@ const Router = require("express").Router;
 const router = new Router();
 
 /** POST /login: {username, password} => {token} */
-
+// calls updatelogintimestamp method on bothe routes
 router.post("/login", async function(req, res, next) {
     const { username, password } = req.body;
     if (User.authenticate(username, password) === true) {

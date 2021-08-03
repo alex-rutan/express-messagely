@@ -38,7 +38,7 @@ class User {
   /** Authenticate: is username/password valid? Returns boolean. */
 
   static async authenticate(username, password) {
-
+    // only need password for query
     const result = await db.query(
       `SELECT username, password
       FROM users
@@ -56,7 +56,7 @@ class User {
   }
 
   /** Update last_login_at for user */
-
+  //throw error if user isnt found
   //change variable name later
   static async updateLoginTimestamp(username) {
     const result = await db.query(
@@ -72,13 +72,14 @@ class User {
   }
 
   /** All: basic info on all users:
-   * [{username, first_name, last_name}, ...] */
+   * [{username, first_name, last_name, phone}, ...] */
 
   static async all() {
       const result = await db.query(
         `SELECT username,
         first_name,
-        last_name
+        last_name,
+        phone
         FROM users` 
       )
       const users =  result.rows
