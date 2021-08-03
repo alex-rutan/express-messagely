@@ -14,16 +14,17 @@ class User {
    */
   // TODO maybe a try/catch for errors
   static async register({ username, password, first_name, last_name, phone }) {
-    const hashedPassword =  await bcrypt(password, BCRYPT_WORK_FACTOR)
+    const hashedPassword =  await bcrypt.hash(password, BCRYPT_WORK_FACTOR)
     const result = await db.query(
       `INSERT INTO users (username,
                           password,
                           first_name,
                           last_name,
                           phone,
-                          join_at)
+                          join_at,
+                          last_login_at )
              VALUES
-               ($1, $2, $3, $4, $5, current_timestamp)
+               ($1, $2, $3, $4, $5, current_timestamp, current_timestamp)
              RETURNING username, password, first_name, last_name, phone`,
       [username, hashedPassword, first_name, last_name, phone]);
     
@@ -55,13 +56,11 @@ class User {
   //change variable name later
   static async updateLoginTimestamp(username) {
     const result = await db.query(
-      `UPDATE  users
-      Set last_login_at = current_timestamp
-      WHERE username = $1
-      Returning username, last_login_at
-      `,
-      [username]
-    )
+          `UPDATE users
+           SET last_login_at = current_timestamp
+             WHERE username= $1
+             RETURNING  last_login_at`,
+            [username]);
     const userLogin = result.rows[0]
 
     return userLogin;
@@ -73,9 +72,9 @@ class User {
 
   static async all() {
       const result = await db.query(
-        `SELECT username AS "userName",
-        first_name AS "firstName",
-        last_name AS "lastName"
+        `SELECT username ,
+        first_name,
+        last_name
         FROM users
         ` 
       )
@@ -95,19 +94,19 @@ class User {
 
   static async get(username) {
     const result = await db.query(
-      `SELECT username AS "userName",
-      first_name AS "firstName",
-      last_name AS "lastName",
+      `SELECT username,
+      first_name,
+      last_name ,
       phone,
-      join_at AS "joinAt"
-      last_login_at AS "lastLoginAt"
+      join_at,
+      last_login_at
       FROM users
       WHERE username = $1
       ` ,[username]
     )
     const user =  result.rows[0]
     if (!user) throw new NotFoundError(`No user named ${username}`)
-    return users
+    return user
   }
 
 
@@ -126,32 +125,30 @@ class User {
               m.to_username, 
               m.body, 
               m.sent_at, 
-              m.read_at
-              t.username AS username,
-              t.first_name AS first_name,
-              t.last_name AS last_name,
-              t.phone AS phone
+              m.read_at,
+              u.username AS username,
+              u.first_name AS first_name,
+              u.last_name AS last_name,
+              u.phone AS phone
       FROM messages AS m
-      JOIN users ON m.from_username = users.username
-      JOIN users AS t ON m.to_username = t.username
-      WHERE users.username = $1`,
+      JOIN users AS u ON m.to_username = u.username
+      WHERE m.from_username = $1`,
       [username]
     );
-    for (let row of result.rows) {
-      row = {
-        id: m.id,
-        to_username: {
-          username: username,
-          first_name: first_name,
-          last_name: last_name,
-          phone: phone
+    
+    return result.rows.map( (row) => ({
+        id: row.id,
+        to_user: {
+          username: row.username,
+          first_name: row.first_name,
+          last_name: row.last_name,
+          phone: row.phone
         },
-        body: m.body,
-        sent_at: m.sent_at,
-        read_at: m.read_at,
-      }
-    }
-    return results.rows;
+        body: row.body,
+        sent_at: row.sent_at,
+        read_at: row.read_at,
+      }))
+      
   }
 
   /** Return messages to this user.
@@ -165,35 +162,31 @@ class User {
   static async messagesTo(username) {
     const result = await db.query(
       `SELECT m.id, 
-              m.to_username, 
+              m.from_username, 
               m.body, 
               m.sent_at, 
-              m.read_at
-              f.username AS username,
-              f.first_name AS first_name,
-              f.last_name AS last_name,
-              f.phone AS phone
+              m.read_at,
+              u.username AS username,
+              u.first_name AS first_name,
+              u.last_name AS last_name,
+              u.phone AS phone
       FROM messages AS m
-      JOIN users ON m.to_username = users.username
-      JOIN users AS f ON m.from_username = f.username
-      WHERE users.username = $1`,
+      JOIN users AS u ON m.from_username = u.username
+      WHERE m.to_username = $1`,
       [username]
     );
-    for (let row of result.rows) {
-      row = {
-        id: m.id,
-        from_username: {
-          username: username,
-          first_name: first_name,
-          last_name: last_name,
-          phone: phone
+    return result.rows.map( (row) => ({ 
+        id: row.id,
+        from_user: {
+          username: row.username,
+          first_name: row.first_name,
+          last_name: row.last_name,
+          phone: row.phone
         },
-        body: m.body,
-        sent_at: m.sent_at,
-        read_at: m.read_at,
-      }
-    }
-    return results.rows;
+        body: row.body,
+        sent_at: row.sent_at,
+        read_at: row.read_at,
+    }))
   }
 }
 
