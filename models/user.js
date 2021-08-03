@@ -28,8 +28,7 @@ class User {
                ($1, $2, $3, $4, $5, current_timestamp, current_timestamp)
              RETURNING username, password, first_name, last_name, phone`,
         [username, hashedPassword, first_name, last_name, phone]);
-
-      return result.rows[0];
+      return result.rows[0];  
     } catch(err) {
       return null;
     }
@@ -74,8 +73,7 @@ class User {
       const result = await db.query(
         `SELECT username,
         first_name,
-        last_name,
-        phone
+        last_name
         FROM users` 
       )
       const users =  result.rows

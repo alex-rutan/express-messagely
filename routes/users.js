@@ -3,14 +3,18 @@
 const Router = require("express").Router;
 const router = new Router();
 const User = require("../models/user");
+const { authenticateJWT, ensureLoggedIn, 
+      ensureCorrectUser, } = require("../middleware/auth")  
 
+const app = require("../app");
+router.use(authenticateJWT) 
 
 /** GET / - get list of users.
  *
  * => {users: [{username, first_name, last_name, phone}, ...]}
  *
  **/
-router.get("/" , async function(req, res, next){
+router.get("/" ,ensureLoggedIn, async function(req, res, next){
   const response = await User.all()
   return res.json( {"users":response})
 })
@@ -20,7 +24,9 @@ router.get("/" , async function(req, res, next){
  * => {user: {username, first_name, last_name, phone, join_at, last_login_at}}
  *
  **/
-router.get( "/:username" , async function(req,res,next){
+
+router.get( "/:username" , ensureCorrectUser,
+  async function(req,res,next){
   const response = await User.get(username)
   return res.json( {"user":response} )
 } )
@@ -33,11 +39,11 @@ router.get( "/:username" , async function(req,res,next){
  *                 body,
  *                 sent_at,
  *                 read_at,
- *                 from_user: {username, first_name, last_name, phone}}, ...]}
+ *                 from_user: {username, first_name, last_name}}, ...]}
  *
  **/
-
-router.get( "/:username/to" , async function( req, res ,next ){
+router.get( "/:username/to" , ensureCorrectUser, 
+  async function( req, res ,next ){
   const response = await User.messagesTo(username)
   return res.json({messages:response})
 })
@@ -53,7 +59,8 @@ router.get( "/:username/to" , async function( req, res ,next ){
  *
  **/
 
- router.get( "/:username/from" , async function( req, res ,next ){
+ router.get( "/:username/from" , ensureCorrectUser,
+  async function( req, res ,next ){
   const response = await User.messagesFrom(username)
   return res.json({messages:response})
 })
