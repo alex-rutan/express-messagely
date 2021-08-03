@@ -15,8 +15,9 @@ class User {
   // TODO maybe a try/catch for errors
   static async register({ username, password, first_name, last_name, phone }) {
     const hashedPassword =  await bcrypt.hash(password, BCRYPT_WORK_FACTOR)
-    const result = await db.query(
-      `INSERT INTO users (username,
+    try {
+      const result = await db.query(
+        `INSERT INTO users (username,
                           password,
                           first_name,
                           last_name,
@@ -26,9 +27,12 @@ class User {
              VALUES
                ($1, $2, $3, $4, $5, current_timestamp, current_timestamp)
              RETURNING username, password, first_name, last_name, phone`,
-      [username, hashedPassword, first_name, last_name, phone]);
-    
-    return result.rows[0];
+        [username, hashedPassword, first_name, last_name, phone]);
+
+      return result.rows[0];
+    } catch(err) {
+      return false;
+    }
   }
 
   /** Authenticate: is username/password valid? Returns boolean. */
@@ -72,11 +76,10 @@ class User {
 
   static async all() {
       const result = await db.query(
-        `SELECT username ,
+        `SELECT username,
         first_name,
         last_name
-        FROM users
-        ` 
+        FROM users` 
       )
       const users =  result.rows
       return users
@@ -96,13 +99,13 @@ class User {
     const result = await db.query(
       `SELECT username,
       first_name,
-      last_name ,
+      last_name,
       phone,
       join_at,
       last_login_at
       FROM users
-      WHERE username = $1
-      ` ,[username]
+      WHERE username = $1`,
+      [username]
     )
     const user =  result.rows[0]
     if (!user) throw new NotFoundError(`No user named ${username}`)
