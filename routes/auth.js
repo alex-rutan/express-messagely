@@ -8,14 +8,16 @@ const Router = require("express").Router;
 const router = new Router();
 
 /** POST /login: {username, password} => {token} */
-// calls updatelogintimestamp method on bothe routes
+
 router.post("/login", async function(req, res, next) {
     const { username, password } = req.body;
     if (User.authenticate(username, password) === true) {
         let token = jwt.sign({ username }, SECRET_KEY);
+        await User.updateLoginTimestamp(username);
         return res.json({ token });
+    } else {
+        throw new UnauthorizedError("Invalid username or password");
     }
-    throw new UnauthorizedError("Invalid username or password");
 });
 
 
@@ -31,9 +33,11 @@ router.post("/register", async function (req, res, next) {
 
     if (user) {
         let token = jwt.sign({ username }, SECRET_KEY);
+        await User.updateLoginTimestamp(username);
         return res.json({ token });
+    } else {
+        throw new BadRequestError("Sorry, that username is already taken");
     }
-    throw new BadRequestError("Sorry, that username is already taken");
 })
 
 

@@ -2,7 +2,7 @@
 
 const Router = require("express").Router;
 const router = new Router();
-const User = require("../models/user")
+const User = require("../models/user");
 
 
 /** GET / - get list of users.

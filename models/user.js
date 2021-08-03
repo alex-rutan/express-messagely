@@ -12,7 +12,7 @@ class User {
   /** Register new user. Returns
    *    {username, password, first_name, last_name, phone}
    */
-  // TODO maybe a try/catch for errors
+  
   static async register({ username, password, first_name, last_name, phone }) {
     const hashedPassword =  await bcrypt.hash(password, BCRYPT_WORK_FACTOR)
     try {
@@ -31,16 +31,15 @@ class User {
 
       return result.rows[0];
     } catch(err) {
-      return false;
+      return null;
     }
   }
 
   /** Authenticate: is username/password valid? Returns boolean. */
 
   static async authenticate(username, password) {
-    // only need password for query
     const result = await db.query(
-      `SELECT username, password
+      `SELECT password
       FROM users
       WHERE username = $1`,
       [username]
@@ -56,8 +55,7 @@ class User {
   }
 
   /** Update last_login_at for user */
-  //throw error if user isnt found
-  //change variable name later
+
   static async updateLoginTimestamp(username) {
     const result = await db.query(
           `UPDATE users
@@ -65,10 +63,8 @@ class User {
              WHERE username= $1
              RETURNING  last_login_at`,
             [username]);
-    const userLogin = result.rows[0]
-
-    return userLogin;
-
+    const lastLoginTime = result.rows[0];
+    if (!lastLoginTime) throw new NotFoundError();
   }
 
   /** All: basic info on all users:
@@ -122,7 +118,6 @@ class User {
    *   {username, first_name, last_name, phone}
    */
 
-  //TODO: check about to_user during the testing
   static async messagesFrom(username) {
     const result = await db.query(
       `SELECT m.id, 
